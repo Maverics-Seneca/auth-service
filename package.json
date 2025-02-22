@@ -2,10 +2,10 @@
   "name": "auth-service",
   "version": "1.0.0",
   "description": "The Auth Service is a crucial component of our microservices architecture, responsible for user authentication and authorization. It leverages Node.js, Firebase Auth, and JWT to provide secure and scalable authentication services.",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
