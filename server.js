@@ -19,12 +19,12 @@ admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
 const app = express();
+app.use(cors({
+    origin: 'http://middleware:3001',
+    credentials: true,
+}));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(cors({
-    origin: 'http://middleware:5000', // Allow requests from middleware
-    credentials: true, // Allow cookies to be sent
-}));
 
 // Register User
 app.post('/api/register', async (req, res) => {
@@ -51,53 +51,37 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     console.log("Login request received:", req.body);
     const { email, password } = req.body;
+
     try {
         const users = await db.collection('users').where('email', '==', email).get();
-        if (users.empty) {
-            console.log("User not found");
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
+        if (users.empty) return res.status(401).json({ message: 'Invalid credentials' });
 
         let userData;
         users.forEach(doc => userData = { id: doc.id, ...doc.data() });
 
-        if (!userData || !userData.password || !(await bcrypt.compare(password, userData.password))) {
-            console.log("Password mismatch");
+        if (!userData || !(await bcrypt.compare(password, userData.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ userId: userData.id, email: userData.email, role: userData.role }, SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: userData.id, email: userData.email, role: userData.role, name: userData.name }, SECRET_KEY, { expiresIn: '1h' });
 
-        res.cookie('authToken', token, {
-            httpOnly: true,
-            secure: false, // Set to false for development (HTTP)
-            sameSite: 'None', // Use 'Lax' for better compatibility
-            maxAge: 3600000, // 1 hour
-            domain: 'localhost', // Replace with your domain in production
-            path: '/', // Accessible across all routes
-        });
-
-        res.json({ message: 'Login successful', token, userId: userData.id, role: userData.role });
+        res.json({ token, userId: userData.id, email: userData.email, name: userData.name });
     } catch (error) {
         console.error("Error in auth-service login:", error.message);
         res.status(500).json({ message: 'Login error', error: error.message });
     }
 });
 
-
 // POST - Request Password Reset
 app.post("/api/request-password-reset", async (req, res) => {
     const { email } = req.body;
 
     try {
-
         const user = await admin.auth().getUserByEmail(email);
         console.log("User exists:", user);
 
-        // Generate Firebase Reset Link
         const resetLink = await admin.auth().generatePasswordResetLink(email);
 
-        // Send email using Resend API
         const response = await resend.emails.send({
             from: "onboarding@resend.dev",
             to: email,
@@ -107,10 +91,10 @@ app.post("/api/request-password-reset", async (req, res) => {
                    <p>If you didn’t request this, ignore this email.</p>`,
         });
 
-        console.log("Resend Response:", response); // Debug log
+        console.log("Resend Response:", response);
         return res.json({ message: "Reset email sent successfully!" });
     } catch (error) {
-        console.error("Error sending email:", error); // Debug log
+        console.error("Error sending email:", error);
         return res.status(500).json({ error: "Error sending reset email", details: error.message });
     }
 });
