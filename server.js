@@ -72,6 +72,82 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Fetch User Data
+app.get('/api/user', async (req, res) => {
+    const { userId } = req.query;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'userId is required' });
+    }
+
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+
+        if (!userDoc.exists) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const userData = userDoc.data();
+        console.log('User data retrieved:', { userId, name: userData.name, email: userData.email });
+
+        res.json({ name: userData.name, email: userData.email });
+    } catch (error) {
+        console.error('Error fetching user from Firebase:', error);
+        res.status(500).json({ error: 'Failed to fetch user data', details: error.message });
+    }
+});
+
+// Update User Data
+app.post('/api/update', async (req, res) => {
+    const { userId, name, email, password, currentPassword } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'userId is required' });
+    }
+
+    try {
+        const userRef = db.collection('users').doc(userId);
+        const doc = await userRef.get();
+
+        if (!doc.exists) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const userData = doc.data();
+
+        // If a new password is provided, verify the current password
+        if (password) {
+            if (!currentPassword) {
+                return res.status(400).json({ error: 'Current password is required to change password' });
+            }
+            const isMatch = await bcrypt.compare(currentPassword, userData.password);
+            if (!isMatch) {
+                return res.status(401).json({ error: 'Incorrect current password' });
+            }
+        }
+
+        // Prepare update data
+        const updateData = { 
+            name, 
+            email, 
+            updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+        };
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10); // Hash new password
+        }
+
+        // Update Firestore and Firebase Auth
+        await userRef.update(updateData);
+        await admin.auth().updateUser(userId, { email, displayName: name });
+
+        console.log('User updated successfully:', { userId });
+        res.json({ message: 'User updated successfully' });
+    } catch (error) {
+        console.error('Error updating user in Firebase:', error);
+        res.status(500).json({ error: 'Failed to update user', details: error.message });
+    }
+});
+
 // POST - Request Password Reset
 app.post("/api/request-password-reset", async (req, res) => {
     const { email } = req.body;
