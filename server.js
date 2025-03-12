@@ -127,10 +127,10 @@ app.post('/api/update', async (req, res) => {
         }
 
         // Prepare update data
-        const updateData = { 
-            name, 
-            email, 
-            updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+        const updateData = {
+            name,
+            email,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
         if (password) {
             updateData.password = await bcrypt.hash(password, 10); // Hash new password
