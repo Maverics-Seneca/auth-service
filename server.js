@@ -72,6 +72,30 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+app.get('/api/logs', async (req, res) => {
+    try {
+      const snapshot = await db.collection('logs').orderBy('timestamp', 'desc').get();
+      const logs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          action: data.action,
+          userId: data.userId,
+          userName: data.userName,
+          entity: data.entity,
+          entityId: data.entityId,
+          entityName: data.entityName,
+          details: data.details,
+          timestamp: data.timestamp ? data.timestamp.toDate() : null,
+        };
+      });
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching logs from Firebase:', error);
+      res.status(500).json({ error: 'Failed to fetch logs', details: error.message });
+    }
+  });
+
 // Fetch User Data
 app.get('/api/user', async (req, res) => {
     const { userId } = req.query;
