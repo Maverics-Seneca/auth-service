@@ -26,6 +26,39 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(cookieParser());
 
+// Logging function
+async function logChange(action, userId, entity, entityId, entityName, details = {}) {
+    try {
+        // Fetch user name from users collection (if userId exists)
+        let userName = 'Unknown';
+        if (userId) {
+            try {
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    userName = userDoc.data().name || 'Unnamed User';
+                }
+            } catch (error) {
+                console.error(`Error fetching user ${userId}:`, error);
+            }
+        }
+
+        const logEntry = {
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            action,
+            userId: userId || 'N/A', // Use 'N/A' if no userId (e.g., before registration)
+            userName,
+            entity,
+            entityId,
+            entityName: entityName || 'N/A',
+            details,
+        };
+        await db.collection('logs').add(logEntry);
+        console.log(`Logged: ${action} on ${entity} (${entityId}, ${entityName}) by ${userId} (${userName})`);
+    } catch (error) {
+        console.error('Error logging change:', error);
+    }
+}
+
 // Register User
 app.post('/api/register', async (req, res) => {
     const { email, password, name, role } = req.body;
@@ -41,6 +74,7 @@ app.post('/api/register', async (req, res) => {
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
+        await logChange('REGISTER', user.uid, 'User', user.uid, name, { data: { email, name, role } });
         res.status(201).json({ message: 'User registered successfully', uid: user.uid });
     } catch (error) {
         res.status(400).json({ message: 'Registration failed', error: error.message });
@@ -64,7 +98,8 @@ app.post('/api/login', async (req, res) => {
         }
 
         const token = jwt.sign({ userId: userData.id, email: userData.email, role: userData.role, name: userData.name }, SECRET_KEY, { expiresIn: '1h' });
-
+        
+        await logChange('LOGIN', userData.id, 'User', userData.id, userData.name, { data: { email } });
         res.json({ token, userId: userData.id, email: userData.email, name: userData.name });
     } catch (error) {
         console.error("Error in auth-service login:", error.message);
@@ -74,27 +109,27 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/logs', async (req, res) => {
     try {
-      const snapshot = await db.collection('logs').orderBy('timestamp', 'desc').get();
-      const logs = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          action: data.action,
-          userId: data.userId,
-          userName: data.userName,
-          entity: data.entity,
-          entityId: data.entityId,
-          entityName: data.entityName,
-          details: data.details,
-          timestamp: data.timestamp ? data.timestamp.toDate() : null,
-        };
-      });
-      res.json(logs);
+        const snapshot = await db.collection('logs').orderBy('timestamp', 'desc').get();
+        const logs = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                action: data.action,
+                userId: data.userId || data.user, // Fallback for older logs
+                userName: data.userName,
+                entity: data.entity,
+                entityId: data.entityId,
+                entityName: data.entityName,
+                details: data.details,
+                timestamp: data.timestamp ? data.timestamp.toDate() : null,
+            };
+        });
+        res.json(logs);
     } catch (error) {
-      console.error('Error fetching logs from Firebase:', error);
-      res.status(500).json({ error: 'Failed to fetch logs', details: error.message });
+        console.error('Error fetching logs from Firebase:', error);
+        res.status(500).json({ error: 'Failed to fetch logs', details: error.message });
     }
-  });
+});
 
 // Fetch User Data
 app.get('/api/user', async (req, res) => {
@@ -164,6 +199,7 @@ app.post('/api/update', async (req, res) => {
         await userRef.update(updateData);
         await admin.auth().updateUser(userId, { email, displayName: name });
 
+        await logChange('UPDATE', userId, 'User', userId, name, { oldData: { name: userData.name, email: userData.email }, newData: { name, email } });
         console.log('User updated successfully:', { userId });
         res.json({ message: 'User updated successfully' });
     } catch (error) {
@@ -191,6 +227,7 @@ app.post("/api/request-password-reset", async (req, res) => {
                    <p>If you didn’t request this, ignore this email.</p>`,
         });
 
+        await logChange('REQUEST_PASSWORD_RESET', user.uid, 'User', user.uid, user.displayName || 'N/A', { data: { email } });
         console.log("Resend Response:", response);
         return res.json({ message: "Reset email sent successfully!" });
     } catch (error) {
