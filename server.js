@@ -59,6 +59,32 @@ async function logChange(action, userId, entity, entityId, entityName, details =
     }
 }
 
+// Register User (Admin-specific endpoint)
+app.post('/api/register-admin', async (req, res) => {
+    const { email, password, name, phone } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await admin.auth().createUser({ email, password, displayName: name });
+
+        // Set role as "admin" and include phone and optional organizationId (null for now)
+        await db.collection('users').doc(user.uid).set({
+            email,
+            name,
+            phone,
+            role: 'admin', // Hardcoded as admin
+            organizationId: null, // Placeholder for future organization linking
+            password: hashedPassword,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await logChange('REGISTER_ADMIN', user.uid, 'User', user.uid, name, { data: { email, name, phone, role: 'admin' } });
+        res.status(201).json({ message: 'Admin registered successfully', uid: user.uid });
+    } catch (error) {
+        console.error('Admin registration error:', error);
+        res.status(400).json({ message: 'Admin registration failed', error: error.message });
+    }
+});
+
 // Register User
 app.post('/api/register', async (req, res) => {
     const { email, password, name, role } = req.body;
