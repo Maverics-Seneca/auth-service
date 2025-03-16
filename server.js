@@ -241,6 +241,83 @@ app.delete('/api/organization/:id', async (req, res) => {
     }
 });
 
+// Auth Service (auth-service.js)
+app.get('/api/get-all-admins', async (req, res) => {
+    console.log('Get all admins request received');
+
+    try {
+        const snapshot = await db.collection('users')
+            .where('role', '==', 'admin')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        const admins = snapshot.docs.map(doc => ({
+            userId: doc.id,
+            ...doc.data()
+        }));
+        console.log('Fetched admins from Firestore:', admins);
+
+        res.json(admins);
+    } catch (error) {
+        console.error('Error fetching admins:', error.message);
+        res.status(500).json({ message: 'Failed to fetch admins', error: error.message });
+    }
+});
+
+// Auth Service (auth-service.js)
+
+app.post('/api/update-admin/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, email, phone, organizationId } = req.body;
+    console.log('Update admin request received for id:', id, 'data:', req.body);
+
+    if (!name || !email || !phone || !organizationId) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    try {
+        const userRef = db.collection('users').doc(id);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists || userDoc.data().role !== 'admin') {
+            return res.status(404).json({ message: 'Admin not found' });
+        }
+
+        await userRef.update({
+            name,
+            email,
+            phone,
+            organizationId,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await logChange('UPDATE_ADMIN', id, 'User', id, name, { data: { email, organizationId } });
+        res.json({ message: 'Admin updated successfully' });
+    } catch (error) {
+        console.error('Error updating admin:', error.message);
+        res.status(500).json({ message: 'Failed to update admin', error: error.message });
+    }
+});
+
+app.delete('/api/delete-admin/:id', async (req, res) => {
+    const { id } = req.params;
+    console.log('Delete admin request received for id:', id);
+
+    try {
+        const userRef = db.collection('users').doc(id);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists || userDoc.data().role !== 'admin') {
+            return res.status(404).json({ message: 'Admin not found' });
+        }
+
+        await userRef.delete();
+        await logChange('DELETE_ADMIN', id, 'User', id, userDoc.data().name, { data: { email: userDoc.data().email } });
+        res.json({ message: 'Admin deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting admin:', error.message);
+        res.status(500).json({ message: 'Failed to delete admin', error: error.message });
+    }
+});
+
 // Login User
 app.post('/api/login', async (req, res) => {
     console.log("Login request received:", req.body);
