@@ -107,6 +107,109 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// Create Organization
+app.post('/api/organization/create', async (req, res) => {
+    console.log('Create organization request received:', req.body);
+    const { userId, name, description } = req.body;
+
+    if (!userId || !name) {
+        return res.status(400).json({ message: 'User ID and name are required' });
+    }
+
+    try {
+        const orgRef = await db.collection('organizations').add({
+            userId,
+            name,
+            description: description || '',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await logChange('CREATE_ORGANIZATION', userId, 'Organization', orgRef.id, name, { data: { description } });
+        res.status(201).json({ organizationId: orgRef.id, message: 'Organization created successfully' });
+    } catch (error) {
+        console.error('Error creating organization:', error.message);
+        res.status(500).json({ message: 'Failed to create organization', error: error.message });
+    }
+});
+
+// Get All Organizations for a User
+app.get('/api/organization/get', async (req, res) => {
+    const { userId } = req.query;
+    console.log('Get organizations request for user:', userId);
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    try {
+        const snapshot = await db.collection('organizations')
+            .where('userId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        const organizations = snapshot.docs.map(doc => ({
+            organizationId: doc.id,
+            ...doc.data()
+        }));
+        console.log('Fetched organizations from Firestore:', organizations); // Add this
+
+        res.json(organizations);
+    } catch (error) {
+        console.error('Error fetching organizations:', error.message);
+        res.status(500).json({ message: 'Failed to fetch organizations', error: error.message });
+    }
+});
+
+// Update Organization
+app.put('/api/organization/:id', async (req, res) => {
+    const { id } = req.params;
+    const { userId, name, description } = req.body;
+    console.log('Update organization request received for ID:', id);
+
+    try {
+        const orgRef = db.collection('organizations').doc(id);
+        const doc = await orgRef.get();
+        if (!doc.exists || doc.data().userId !== userId) {
+            return res.status(403).json({ message: 'Unauthorized or organization not found' });
+        }
+
+        await orgRef.update({
+            name,
+            description,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await logChange('UPDATE_ORGANIZATION', userId, 'Organization', id, name, { data: { description } });
+        res.status(200).json({ message: 'Organization updated successfully' });
+    } catch (error) {
+        console.error('Error updating organization:', error.message);
+        res.status(500).json({ message: 'Failed to update organization', error: error.message });
+    }
+});
+
+// Delete Organization
+app.delete('/api/organization/:id', async (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.body;
+    console.log('Delete organization request received for ID:', id);
+
+    try {
+        const orgRef = db.collection('organizations').doc(id);
+        const doc = await orgRef.get();
+        if (!doc.exists || doc.data().userId !== userId) {
+            return res.status(403).json({ message: 'Unauthorized or organization not found' });
+        }
+
+        const orgName = doc.data().name;
+        await orgRef.delete();
+        await logChange('DELETE_ORGANIZATION', userId, 'Organization', id, orgName, {});
+        res.status(200).json({ message: 'Organization deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting organization:', error.message);
+        res.status(500).json({ message: 'Failed to delete organization', error: error.message });
+    }
+});
+
 // Login User
 app.post('/api/login', async (req, res) => {
     console.log("Login request received:", req.body);
@@ -118,6 +221,7 @@ app.post('/api/login', async (req, res) => {
 
         let userData;
         users.forEach(doc => userData = { id: doc.id, ...doc.data() });
+        console.log('User data from Firestore:', userData); // Should show role: "owner"
 
         if (!userData || !(await bcrypt.compare(password, userData.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });
