@@ -61,27 +61,39 @@ async function logChange(action, userId, entity, entityId, entityName, details =
 
 // Register User (Admin-specific endpoint)
 app.post('/api/register-admin', async (req, res) => {
-    const { email, password, name, phone } = req.body;
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await admin.auth().createUser({ email, password, displayName: name });
+    console.log('Register admin request received:', req.body);
+    const { name, email, phone, password, organizationId, role } = req.body;
 
-        // Set role as "admin" and include phone and optional organizationId (null for now)
-        await db.collection('users').doc(user.uid).set({
-            email,
+    if (!name || !email || !phone || !password || !organizationId) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    try {
+        // Check if email already exists
+        const users = await db.collection('users').where('email', '==', email).get();
+        if (!users.empty) {
+            return res.status(400).json({ message: 'Email already registered' });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user with organizationId
+        const userRef = await db.collection('users').add({
             name,
+            email,
             phone,
-            role: 'admin', // Hardcoded as admin
-            organizationId: null, // Placeholder for future organization linking
             password: hashedPassword,
+            role: role || 'admin', // Default to 'admin' if not provided
+            organizationId,
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        await logChange('REGISTER_ADMIN', user.uid, 'User', user.uid, name, { data: { email, name, phone, role: 'admin' } });
-        res.status(201).json({ message: 'Admin registered successfully', uid: user.uid });
+        await logChange('REGISTER_ADMIN', userRef.id, 'User', userRef.id, name, { data: { email, organizationId } });
+        res.json({ message: 'Admin registered successfully', userId: userRef.id });
     } catch (error) {
-        console.error('Admin registration error:', error);
-        res.status(400).json({ message: 'Admin registration failed', error: error.message });
+        console.error('Error registering admin:', error.message);
+        res.status(500).json({ message: 'Failed to register admin', error: error.message });
     }
 });
 
@@ -160,6 +172,25 @@ app.get('/api/organization/get', async (req, res) => {
     }
 });
 
+// Fetch all organizations
+app.get('/api/organization/get-all', async (req, res) => {
+    console.log('Get all organizations request received');
+
+    try {
+        const snapshot = await db.collection('organizations').get();
+        const organizations = snapshot.docs.map(doc => ({
+            organizationId: doc.id,
+            name: doc.data().name
+        }));
+        console.log('Fetched all organizations from Firestore:', organizations);
+
+        res.json(organizations);
+    } catch (error) {
+        console.error('Error fetching all organizations:', error.message);
+        res.status(500).json({ message: 'Failed to fetch organizations', error: error.message });
+    }
+});
+
 // Update Organization
 app.put('/api/organization/:id', async (req, res) => {
     const { id } = req.params;
@@ -228,7 +259,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         const token = jwt.sign({ userId: userData.id, email: userData.email, role: userData.role, name: userData.name }, SECRET_KEY, { expiresIn: '1h' });
-        
+
         await logChange('LOGIN', userData.id, 'User', userData.id, userData.name, { data: { email } });
         res.json({ token, userId: userData.id, email: userData.email, name: userData.name });
     } catch (error) {
