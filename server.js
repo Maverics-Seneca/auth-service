@@ -27,33 +27,22 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Logging function
-async function logChange(action, userId, entity, entityId, entityName, details = {}) {
+async function logChange(action, userId, entity, entityId, entityName, details) {
     try {
-        // Fetch user name from users collection (if userId exists)
-        let userName = 'Unknown';
-        if (userId) {
-            try {
-                const userDoc = await db.collection('users').doc(userId).get();
-                if (userDoc.exists) {
-                    userName = userDoc.data().name || 'Unnamed User';
-                }
-            } catch (error) {
-                console.error(`Error fetching user ${userId}:`, error);
-            }
-        }
-
-        const logEntry = {
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        await db.collection('logs').add({
             action,
-            userId: userId || 'N/A', // Use 'N/A' if no userId (e.g., before registration)
-            userName,
+            userId,
+            userName: userData.name || 'Unknown',
             entity,
             entityId,
-            entityName: entityName || 'N/A',
+            entityName,
             details,
-        };
-        await db.collection('logs').add(logEntry);
-        console.log(`Logged: ${action} on ${entity} (${entityId}, ${entityName}) by ${userId} (${userName})`);
+            organizationId: userData.organizationId || null, // Include organizationId
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`Logged ${action} for ${entity} with ID ${entityId}`);
     } catch (error) {
         console.error('Error logging change:', error);
     }
@@ -346,8 +335,25 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.get('/api/logs', async (req, res) => {
+    const { userId, role } = req.query; // Expect userId and role from the request
+    console.log('Fetching logs for user:', userId, 'with role:', role);
+
     try {
-        const snapshot = await db.collection('logs').orderBy('timestamp', 'desc').get();
+        let query = db.collection('logs').orderBy('timestamp', 'desc');
+
+        // Filter logs based on role
+        if (role === 'admin') {
+            // Admins see logs related to their scope, excluding owner-specific actions
+            query = query.where('action', 'not-in', ['REGISTER_ADMIN', 'UPDATE_ADMIN', 'DELETE_ADMIN', 'CREATE_ORGANIZATION', 'UPDATE_ORGANIZATION', 'DELETE_ORGANIZATION']);
+            // Optionally filter by organization if admins are scoped to one
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists && userDoc.data().organizationId) {
+                query = query.where('organizationId', '==', userDoc.data().organizationId);
+            }
+        }
+        // Owners see all logs, no additional filtering needed
+
+        const snapshot = await query.get();
         const logs = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -360,8 +366,10 @@ app.get('/api/logs', async (req, res) => {
                 entityName: data.entityName,
                 details: data.details,
                 timestamp: data.timestamp ? data.timestamp.toDate() : null,
+                organizationId: data.organizationId || null // Include organizationId if present
             };
         });
+
         res.json(logs);
     } catch (error) {
         console.error('Error fetching logs from Firebase:', error);
