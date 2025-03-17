@@ -11,7 +11,8 @@ dotenv.config();
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const SECRET_KEY = process.env.JWT_SECRET;
+// const SECRET_KEY = process.env.JWT_SECRET;
+const SECRET_KEY = 'my_jwt_secret';
 
 // Initialize Firebase
 const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
@@ -313,21 +314,32 @@ app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const users = await db.collection('users').where('email', '==', email).get();
+        const users = await admin.firestore().collection('users').where('email', '==', email).get();
         if (users.empty) return res.status(401).json({ message: 'Invalid credentials' });
 
         let userData;
         users.forEach(doc => userData = { id: doc.id, ...doc.data() });
-        console.log('User data from Firestore:', userData); // Should show role: "user" or other
+        console.log('User data from Firestore:', userData);
 
         if (!userData || !(await bcrypt.compare(password, userData.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ userId: userData.id, email: userData.email, role: userData.role, name: userData.name }, SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign(
+            { userId: userData.id, email: userData.email, role: userData.role, name: userData.name, organizationId: userData.organizationId },
+            SECRET_KEY,
+            { expiresIn: '1h' }
+        );
 
         await logChange('LOGIN', userData.id, 'User', userData.id, userData.name, { data: { email } });
-        res.json({ token, userId: userData.id, email: userData.email, name: userData.name, role: userData.role }); // Added role
+        res.json({
+            token,
+            userId: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            organizationId: userData.organizationId
+        });
     } catch (error) {
         console.error("Error in auth-service login:", error.message);
         res.status(500).json({ message: 'Login error', error: error.message });
@@ -374,6 +386,22 @@ app.get('/api/logs', async (req, res) => {
     } catch (error) {
         console.error('Error fetching logs from Firebase:', error);
         res.status(500).json({ error: 'Failed to fetch logs', details: error.message });
+    }
+});
+
+app.get('/api/users', async (req, res) => {
+    const { organizationId, role } = req.query;
+    try {
+        let query = admin.firestore().collection('users');
+        if (organizationId) query = query.where('organizationId', '==', organizationId);
+        if (role) query = query.where('role', '==', role);
+
+        const snapshot = await query.get();
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error.message);
+        res.status(500).json({ error: 'Failed to fetch users' });
     }
 });
 
