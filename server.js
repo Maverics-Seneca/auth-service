@@ -430,6 +430,30 @@ app.get('/api/user', async (req, res) => {
     }
 });
 
+// Create a new user (patient)
+app.post('/api/users', async (req, res) => {
+    const { email, name, phone, dob, password, role, organizationId } = req.body;
+    try {
+        console.log('Creating new patient in Firestore:', { email, name, phone, role, organizationId });
+        const userRef = await admin.firestore().collection('users').add({
+            email,
+            name,
+            phone,
+            dob,
+            password,
+            role,
+            organizationId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        res.json({ id: userRef.id, message: 'Patient created successfully' });
+    } catch (error) {
+        console.error('Error creating patient:', error.message);
+        res.status(500).json({ error: 'Failed to create patient' });
+    }
+});
+
 // Update User Data
 app.post('/api/update', async (req, res) => {
     const { userId, name, email, password, currentPassword } = req.body;
