@@ -11,8 +11,7 @@ dotenv.config();
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// const SECRET_KEY = process.env.JWT_SECRET;
-const SECRET_KEY = 'my_jwt_secret';
+const SECRET_KEY = process.env.JWT_SECRET;
 
 // Initialize Firebase
 const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
