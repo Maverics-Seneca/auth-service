@@ -318,7 +318,7 @@ app.post('/api/login', async (req, res) => {
 
         let userData;
         users.forEach(doc => userData = { id: doc.id, ...doc.data() });
-        console.log('User data from Firestore:', userData); // Should show role: "owner"
+        console.log('User data from Firestore:', userData); // Should show role: "user" or other
 
         if (!userData || !(await bcrypt.compare(password, userData.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -327,7 +327,7 @@ app.post('/api/login', async (req, res) => {
         const token = jwt.sign({ userId: userData.id, email: userData.email, role: userData.role, name: userData.name }, SECRET_KEY, { expiresIn: '1h' });
 
         await logChange('LOGIN', userData.id, 'User', userData.id, userData.name, { data: { email } });
-        res.json({ token, userId: userData.id, email: userData.email, name: userData.name });
+        res.json({ token, userId: userData.id, email: userData.email, name: userData.name, role: userData.role }); // Added role
     } catch (error) {
         console.error("Error in auth-service login:", error.message);
         res.status(500).json({ message: 'Login error', error: error.message });
