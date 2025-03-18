@@ -1,24 +1,29 @@
+// Import required modules
+require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
 const admin = require('firebase-admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-
-dotenv.config();
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Load environment variables
+dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET;
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Initialize Firebase
 const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8'));
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
+// Initialize Express app
 const app = express();
+const PORT = process.env.PORT || 4000;
+
+// Middleware setup
 app.use(cors({
     origin: 'http://middleware:3001',
     credentials: true,
@@ -26,7 +31,17 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-// Logging function
+// Utility Functions
+
+/**
+ * Logs changes to Firestore for auditing purposes.
+ * @param {string} action - The action performed (e.g., REGISTER, LOGIN, UPDATE).
+ * @param {string} userId - The ID of the user performing the action.
+ * @param {string} entity - The entity being modified (e.g., User, Organization).
+ * @param {string} entityId - The ID of the entity being modified.
+ * @param {string} entityName - The name of the entity being modified.
+ * @param {object} details - Additional details about the change.
+ */
 async function logChange(action, userId, entity, entityId, entityName, details) {
     try {
         const userDoc = await db.collection('users').doc(userId).get();
@@ -48,7 +63,18 @@ async function logChange(action, userId, entity, entityId, entityName, details) 
     }
 }
 
-// Register User (Admin-specific endpoint)
+// API Endpoints
+
+/**
+ * Register an admin user.
+ * @route POST /api/register-admin
+ * @param {string} name - The name of the admin.
+ * @param {string} email - The email of the admin.
+ * @param {string} phone - The phone number of the admin.
+ * @param {string} password - The password of the admin.
+ * @param {string} organizationId - The ID of the organization the admin belongs to.
+ * @param {string} role - The role of the admin (default: 'admin').
+ */
 app.post('/api/register-admin', async (req, res) => {
     console.log('Register admin request received:', req.body);
     const { name, email, phone, password, organizationId, role } = req.body;
@@ -86,7 +112,14 @@ app.post('/api/register-admin', async (req, res) => {
     }
 });
 
-// Register User
+/**
+ * Register a regular user.
+ * @route POST /api/register
+ * @param {string} email - The email of the user.
+ * @param {string} password - The password of the user.
+ * @param {string} name - The name of the user.
+ * @param {string} role - The role of the user (default: 'user').
+ */
 app.post('/api/register', async (req, res) => {
     const { email, password, name, role } = req.body;
     try {
@@ -108,7 +141,13 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Create Organization
+/**
+ * Create a new organization.
+ * @route POST /api/organization/create
+ * @param {string} userId - The ID of the user creating the organization.
+ * @param {string} name - The name of the organization.
+ * @param {string} description - The description of the organization.
+ */
 app.post('/api/organization/create', async (req, res) => {
     console.log('Create organization request received:', req.body);
     const { userId, name, description } = req.body;
@@ -133,7 +172,10 @@ app.post('/api/organization/create', async (req, res) => {
     }
 });
 
-// Fetch all organizations
+/**
+ * Fetch all organizations.
+ * @route GET /api/organization/get-all
+ */
 app.get('/api/organization/get-all', async (req, res) => {
     console.log('Get all organizations request received');
 
@@ -152,6 +194,11 @@ app.get('/api/organization/get-all', async (req, res) => {
     }
 });
 
+/**
+ * Fetch organizations for a specific user.
+ * @route GET /api/organizations
+ * @param {string} userId - The ID of the user to fetch organizations for.
+ */
 app.get('/api/organizations', async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
@@ -176,7 +223,14 @@ app.get('/api/organizations', async (req, res) => {
     }
 });
 
-// Update Organization
+/**
+ * Update an organization.
+ * @route PUT /api/organization/:id
+ * @param {string} id - The ID of the organization to update.
+ * @param {string} userId - The ID of the user updating the organization.
+ * @param {string} name - The updated name of the organization.
+ * @param {string} description - The updated description of the organization.
+ */
 app.put('/api/organization/:id', async (req, res) => {
     const { id } = req.params;
     const { userId, name, description } = req.body;
@@ -203,7 +257,12 @@ app.put('/api/organization/:id', async (req, res) => {
     }
 });
 
-// Delete Organization
+/**
+ * Delete an organization.
+ * @route DELETE /api/organization/:id
+ * @param {string} id - The ID of the organization to delete.
+ * @param {string} userId - The ID of the user deleting the organization.
+ */
 app.delete('/api/organization/:id', async (req, res) => {
     const { id } = req.params;
     const { userId } = req.body;
@@ -226,7 +285,10 @@ app.delete('/api/organization/:id', async (req, res) => {
     }
 });
 
-// Auth Service (auth-service.js)
+/**
+ * Fetch all admins.
+ * @route GET /api/get-all-admins
+ */
 app.get('/api/get-all-admins', async (req, res) => {
     console.log('Get all admins request received');
 
@@ -249,8 +311,15 @@ app.get('/api/get-all-admins', async (req, res) => {
     }
 });
 
-// Auth Service (auth-service.js)
-
+/**
+ * Update an admin.
+ * @route POST /api/update-admin/:id
+ * @param {string} id - The ID of the admin to update.
+ * @param {string} name - The updated name of the admin.
+ * @param {string} email - The updated email of the admin.
+ * @param {string} phone - The updated phone number of the admin.
+ * @param {string} organizationId - The updated organization ID of the admin.
+ */
 app.post('/api/update-admin/:id', async (req, res) => {
     const { id } = req.params;
     const { name, email, phone, organizationId } = req.body;
@@ -283,6 +352,11 @@ app.post('/api/update-admin/:id', async (req, res) => {
     }
 });
 
+/**
+ * Delete an admin.
+ * @route DELETE /api/delete-admin/:id
+ * @param {string} id - The ID of the admin to delete.
+ */
 app.delete('/api/delete-admin/:id', async (req, res) => {
     const { id } = req.params;
     console.log('Delete admin request received for id:', id);
@@ -303,7 +377,12 @@ app.delete('/api/delete-admin/:id', async (req, res) => {
     }
 });
 
-// Login User
+/**
+ * Login a user.
+ * @route POST /api/login
+ * @param {string} email - The email of the user.
+ * @param {string} password - The password of the user.
+ */
 app.post('/api/login', async (req, res) => {
     console.log("Login request received:", req.body);
     const { email, password } = req.body;
@@ -341,6 +420,12 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+/**
+ * Fetch logs.
+ * @route GET /api/logs
+ * @param {string} userId - The ID of the user fetching logs.
+ * @param {string} role - The role of the user.
+ */
 app.get('/api/logs', async (req, res) => {
     const { userId, role } = req.query; // Expect userId and role from the request
     console.log('Fetching logs for user:', userId, 'with role:', role);
@@ -384,6 +469,12 @@ app.get('/api/logs', async (req, res) => {
     }
 });
 
+/**
+ * Fetch users.
+ * @route GET /api/users
+ * @param {string} organizationId - The ID of the organization to filter users by.
+ * @param {string} role - The role of the users to filter by.
+ */
 app.get('/api/users', async (req, res) => {
     const { organizationId, role } = req.query;
     console.log('Fetching users with organizationId:', organizationId, 'role:', role);
@@ -402,7 +493,11 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// Fetch User Data
+/**
+ * Fetch user data.
+ * @route GET /api/user
+ * @param {string} userId - The ID of the user to fetch data for.
+ */
 app.get('/api/user', async (req, res) => {
     const { userId } = req.query;
 
@@ -427,7 +522,17 @@ app.get('/api/user', async (req, res) => {
     }
 });
 
-// Create a new user (patient)
+/**
+ * Create a new user (patient).
+ * @route POST /api/users
+ * @param {string} email - The email of the user.
+ * @param {string} name - The name of the user.
+ * @param {string} phone - The phone number of the user.
+ * @param {string} dob - The date of birth of the user.
+ * @param {string} password - The password of the user.
+ * @param {string} role - The role of the user.
+ * @param {string} organizationId - The ID of the organization the user belongs to.
+ */
 app.post('/api/users', async (req, res) => {
     const { email, name, phone, dob, password, role, organizationId } = req.body;
     try {
@@ -451,7 +556,15 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
-// Update User Data
+/**
+ * Update user data.
+ * @route POST /api/update
+ * @param {string} userId - The ID of the user to update.
+ * @param {string} name - The updated name of the user.
+ * @param {string} email - The updated email of the user.
+ * @param {string} password - The updated password of the user.
+ * @param {string} currentPassword - The current password of the user.
+ */
 app.post('/api/update', async (req, res) => {
     const { userId, name, email, password, currentPassword } = req.body;
 
@@ -503,7 +616,11 @@ app.post('/api/update', async (req, res) => {
     }
 });
 
-// POST - Request Password Reset
+/**
+ * Request a password reset.
+ * @route POST /api/request-password-reset
+ * @param {string} email - The email of the user requesting the password reset.
+ */
 app.post("/api/request-password-reset", async (req, res) => {
     const { email } = req.body;
 
@@ -531,5 +648,5 @@ app.post("/api/request-password-reset", async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 4000;
+// Start the server
 app.listen(PORT, () => console.log(`Auth Service running on port ${PORT}`));
