@@ -180,6 +180,29 @@ app.get('/api/organization/get-all', async (req, res) => {
     }
 });
 
+app.get('/api/organizations', async (req, res) => {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    try {
+        const snapshot = await db.collection('organizations')
+            .where('ownerId', '==', userId)
+            .get();
+
+        if (snapshot.empty) {
+            console.log('No organizations found for userId:', userId);
+            return res.json([]);
+        }
+
+        const organizations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Fetched organizations:', organizations);
+        res.json(organizations);
+    } catch (error) {
+        console.error('Error fetching organizations:', error.message);
+        res.status(500).json([]);
+    }
+});
+
 // Update Organization
 app.put('/api/organization/:id', async (req, res) => {
     const { id } = req.params;
