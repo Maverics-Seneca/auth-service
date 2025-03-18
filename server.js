@@ -133,34 +133,6 @@ app.post('/api/organization/create', async (req, res) => {
     }
 });
 
-// Get All Organizations for a User
-app.get('/api/organization/get', async (req, res) => {
-    const { userId } = req.query;
-    console.log('Get organizations request for user:', userId);
-
-    if (!userId) {
-        return res.status(400).json({ message: 'User ID is required' });
-    }
-
-    try {
-        const snapshot = await db.collection('organizations')
-            .where('userId', '==', userId)
-            .orderBy('createdAt', 'desc')
-            .get();
-
-        const organizations = snapshot.docs.map(doc => ({
-            organizationId: doc.id,
-            ...doc.data()
-        }));
-        console.log('Fetched organizations from Firestore:', organizations); // Add this
-
-        res.json(organizations);
-    } catch (error) {
-        console.error('Error fetching organizations:', error.message);
-        res.status(500).json({ message: 'Failed to fetch organizations', error: error.message });
-    }
-});
-
 // Fetch all organizations
 app.get('/api/organization/get-all', async (req, res) => {
     console.log('Get all organizations request received');
@@ -184,9 +156,10 @@ app.get('/api/organizations', async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
+    console.log('Fetching organizations for userId:', userId);
     try {
         const snapshot = await db.collection('organizations')
-            .where('ownerId', '==', userId)
+            .where('userId', '==', userId)
             .get();
 
         if (snapshot.empty) {
@@ -195,11 +168,11 @@ app.get('/api/organizations', async (req, res) => {
         }
 
         const organizations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log('Fetched organizations:', organizations);
+        console.log('Fetched organizations from Firestore:', organizations);
         res.json(organizations);
     } catch (error) {
         console.error('Error fetching organizations:', error.message);
-        res.status(500).json([]);
+        res.status(500).json({ error: 'Failed to fetch organizations' });
     }
 });
 
@@ -413,6 +386,7 @@ app.get('/api/logs', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
     const { organizationId, role } = req.query;
+    console.log('Fetching users with organizationId:', organizationId, 'role:', role);
     try {
         let query = admin.firestore().collection('users');
         if (organizationId) query = query.where('organizationId', '==', organizationId);
@@ -420,6 +394,7 @@ app.get('/api/users', async (req, res) => {
 
         const snapshot = await query.get();
         const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Fetched users from Firestore:', users);
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error.message);
