@@ -1,5 +1,4 @@
 // Import required modules
-require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -7,6 +6,7 @@ const admin = require('firebase-admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const dotenv = require('dotenv');
 const { Resend } = require("resend");
 
 // Load environment variables
