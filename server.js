@@ -648,5 +648,44 @@ app.post("/api/request-password-reset", async (req, res) => {
     }
 });
 
+/**
+ * Login a caretaker.
+ * @route POST /api/caretaker-login
+ * @param {string} email - The caretaker's email.
+ * @param {string} password - The caretaker's password.
+ * @returns {string} patientId if credentials are valid.
+ */
+app.post('/api/caretaker-login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    try {
+        const snapshot = await db.collection('caretakers')
+            .where('email', '==', email)
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        const doc = snapshot.docs[0];
+        const caretaker = doc.data();
+
+        const isMatch = password == caretaker.password;
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        return res.status(200).json({ patientId: caretaker.patientId });
+    } catch (error) {
+        console.error('Error during caretaker login:', error);
+        return res.status(500).json({ message: 'Caretaker login failed', error: error.message });
+    }
+});
+
 // Start the server
 app.listen(PORT, () => console.log(`Auth Service running on port ${PORT}`));
