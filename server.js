@@ -378,6 +378,78 @@ app.delete('/api/delete-admin/:id', async (req, res) => {
 });
 
 /**
+ * Delete a patient (user).
+ * @route DELETE /api/users/:id
+ * @description Delete a patient from Firestore
+ */
+app.delete('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const userRef = db.collection('users').doc(id);
+        const userDoc = await userRef.get();
+
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
+
+        const userData = userDoc.data();
+        if (userData.role !== 'user') {
+            return res.status(403).json({ message: 'Can only delete patients (role: user)' });
+        }
+
+        await userRef.delete();
+        await logChange('DELETE_USER', id, 'User', id, userData.name, { data: { email: userData.email } });
+        res.status(200).send('Patient deleted');
+    } catch (error) {
+        console.error('Error deleting patient:', error.message);
+        res.status(500).send('Failed to delete patient');
+    }
+});
+
+/**
+ * Update a patient (user).
+ * @route POST /api/users/:id
+ * @description Update a patient's details in Firestore
+ */
+app.post('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, email, phone, organizationId, role } = req.body;
+
+    if (!name || !email || !phone || !organizationId) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    try {
+        const userRef = db.collection('users').doc(id);
+        const userDoc = await userRef.get();
+
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'Patient not found' });
+        }
+
+        const userData = userDoc.data();
+        if (userData.role !== 'user' || role !== 'user') {
+            return res.status(403).json({ message: 'Can only update patients (role: user)' });
+        }
+
+        await userRef.update({
+            name,
+            email,
+            phone,
+            organizationId,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await logChange('UPDATE_USER', id, 'User', id, name, { data: { email, phone, organizationId } });
+        res.status(200).send('Patient updated');
+    } catch (error) {
+        console.error('Error updating patient:', error.message);
+        res.status(500).send('Failed to update patient');
+    }
+});
+
+/**
  * Login a user.
  * @route POST /api/login
  * @param {string} email - The email of the user.
