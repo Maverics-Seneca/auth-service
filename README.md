@@ -6,75 +6,18 @@ The Auth Service is a crucial component of our microservices architecture, respo
 
 ## Login details
 
-### Hamza's Data
-
-| Category       | ID         | Name             | Email                          | Password       | Role  | Organization ID | Details (if applicable)         |
-|----------------|------------|------------------|--------------------------------|----------------|-------|-----------------|---------------------------------|
-| Owner          | owner1     | Hamza Owner      | hamzaowner@meditrack.com       | ownerpass123   | owner | -               | -                               |
-| Organization   | org1       | HealthCare Inc.  | -                              | -              | -     | -               | Primary healthcare provider     |
-| Organization   | org4       | Rural Health     | -                              | -              | -     | -               | Rural healthcare                |
-| Admin          | admin1     | hamza Admin 1    | hamzaadmin1org1@meditrack.com  | adminpass123   | admin | org1            | -                               |
-| Admin          | admin2     | hamza Admin 2    | hamzaadmin2org1@meditrack.com  | adminpass123   | admin | org1            | -                               |
-| Admin          | admin7     | hamza Admin 1    | hamzaadmin1org4@meditrack.com  | adminpass123   | admin | org4            | -                               |
-| Admin          | admin8     | hamza Admin 2    | hamzaadmin2org4@meditrack.com  | adminpass123   | admin | org4            | -                               |
-| Patient        | patient1   | hamza Patient 1  | hamzapatient1org1@meditrack.com| userpass123    | user  | org1            | -                               |
-| Patient        | patient2   | hamza Patient 2  | hamzapatient2org1@meditrack.com| userpass123    | user  | org1            | -                               |
-| Patient        | patient3   | hamza Patient 3  | hamzapatient3org1@meditrack.com| userpass123    | user  | org1            | -                               |
-| Patient        | patient10  | hamza Patient 1  | hamzapatient1org4@meditrack.com| userpass123    | user  | org4            | -                               |
-| Patient        | patient11  | hamza Patient 2  | hamzapatient2org4@meditrack.com| userpass123    | user  | org4            | -                               |
-| Patient        | patient12  | hamza Patient 3  | hamzapatient3org4@meditrack.com| userpass123    | user  | org4            | -                               |
-
-### Ankita's Data
-
-| Category       | ID         | Name             | Email                           | Password       | Role  | Organization ID | Details (if applicable)         |
-|----------------|------------|------------------|---------------------------------|----------------|-------|-----------------|---------------------------------|
-| Owner          | owner2     | Ankita Owner     | ankitaowner@meditrack.com       | ownerpass123   | owner | -               | -                               |
-| Organization   | org2       | MediWell Corp    | -                               | -              | -     | -               | Wellness services               |
-| Organization   | org7       | MultiCare        | -                               | -              | -     | -               | Multi-specialty care            |
-| Admin          | admin3     | ankita Admin 1   | ankitaadmin1org2@meditrack.com  | adminpass123   | admin | org2            | -                               |
-| Admin          | admin4     | ankita Admin 2   | ankitaadmin2org2@meditrack.com  | adminpass123   | admin | org2            | -                               |
-| Admin          | admin13    | ankita Admin 1   | ankitaadmin1org7@meditrack.com  | adminpass123   | admin | org7            | -                               |
-| Admin          | admin14    | ankita Admin 2   | ankitaadmin2org7@meditrack.com  | adminpass123   | admin | org7            | -                               |
-| Patient        | patient4   | ankita Patient 1 | ankitapatient1org2@meditrack.com| userpass123    | user  | org2            | -                               |
-| Patient        | patient5   | ankita Patient 2 | ankitapatient2org2@meditrack.com| userpass123    | user  | org2            | -                               |
-| Patient        | patient6   | ankita Patient 3 | ankitapatient3org2@meditrack.com| userpass123    | user  | org2            | -                               |
-| Patient        | patient19  | ankita Patient 1 | ankitapatient1org7@meditrack.com| userpass123    | user  | org7            | -                               |
-| Patient        | patient20  | ankita Patient 2 | ankitapatient2org7@meditrack.com| userpass123    | user  | org7            | -                               |
-| Patient        | patient21  | ankita Patient 3 | ankitapatient3org7@meditrack.com| userpass123    | user  | org7            | -                               |
-
-### Ranju's Data
-
-| Category       | ID         | Name             | Email                          | Password       | Role  | Organization ID | Details (if applicable)         |
-|----------------|------------|------------------|--------------------------------|----------------|-------|-----------------|---------------------------------|
-| Owner          | owner3     | Ranju Owner      | ranjuowner@meditrack.com       | ownerpass123   | owner | -               | -                               |
-| Organization   | org3       | City Clinic      | -                              | -              | -     | -               | Urban medical center            |
-| Admin          | admin5     | ranju Admin 1    | ranjuadmin1org3@meditrack.com  | adminpass123   | admin | org3            | -                               |
-| Admin          | admin6     | ranju Admin 2    | ranjuadmin2org3@meditrack.com  | adminpass123   | admin | org3            | -                               |
-| Patient        | patient7   | ranju Patient 1  | ranjupatient1org3@meditrack.com| userpass123    | user  | org3            | -                               |
-| Patient        | patient8   | ranju Patient 2  | ranjupatient2org3@meditrack.com| userpass123    | user  | org3            | -                               |
-| Patient        | patient9   | ranju Patient 3  | ranjupatient3org3@meditrack.com| userpass123    | user  | org3            | -                               |
-
-### Aisha's Data
-| Category       | ID         | Name             | Email                          | Password       | Role  | Organization ID | Details (if applicable)         |
-|----------------|------------|------------------|--------------------------------|----------------|-------|-----------------|---------------------------------|
-| Owner          | owner4     | Aisha Owner      | aishaowner@meditrack.com       | ownerpass123   | owner | -               | -                               |
-| Organization   | org5       | Family Care      | -                              | -              | -     | -               | Family-oriented care            |
-| Admin          | admin9     | aisha Admin 1    | aishaadmin1org5@meditrack.com  | adminpass123   | admin | org5            | -                               |
-| Admin          | admin10    | aisha Admin 2    | aishaadmin2org5@meditrack.com  | adminpass123   | admin | org5            | -                               |
-| Patient        | patient13  | aisha Patient 1  | aishapatient1org5@meditrack.com| userpass123    | user  | org5            | -                               |
-| Patient        | patient14  | aisha Patient 2  | aishapatient2org5@meditrack.com| userpass123    | user  | org5            | -                               |
-| Patient        | patient15  | aisha Patient 3  | aishapatient3org5@meditrack.com| userpass123    | user  | org5            | -                               |
-
-### Arpit's Data
-| Category       | ID         | Name             | Email                          | Password       | Role  | Organization ID | Details (if applicable)         |
-|----------------|------------|------------------|--------------------------------|----------------|-------|-----------------|---------------------------------|
-| Owner          | owner5     | Arpit Owner      | arpitowner@meditrack.com       | ownerpass123   | owner | -               | -                               |
-| Organization   | org6       | Senior Living    | -                              | -              | -     | -               | Senior care services            |
-| Admin          | admin11    | arpit Admin 1    | arpitadmin1org6@meditrack.com  | adminpass123   | admin | org6            | -                               |
-| Admin          | admin12    | arpit Admin 2    | arpitadmin2org6@meditrack.com  | adminpass123   | admin | org6            | -                               |
-| Patient        | patient16  | arpit Patient 1  | arpitpatient1org6@meditrack.com| userpass123    | user  | org6            | -                               |
-| Patient        | patient17  | arpit Patient 2  | arpitpatient2org6@meditrack.com| userpass123    | user  | org6            | -                               |
-| Patient        | patient18  | arpit Patient 3  | arpitpatient3org6@meditrack.com| userpass123    | user  | org6            | -                               |
+| Role            | Name               | Email                          | Password      |
+|------------------|--------------------|--------------------------------|---------------|
+| Owner           | Hamza Owner        | hamzaowner@meditrack.com       | ownerpass123  |
+| Admin           | Hamza Admin 1-1    | hamzaadmin11@meditrack.com     | adminpass123  |
+| Admin           | Hamza Admin 1-2    | hamzaadmin12@meditrack.com     | adminpass123  |
+| Admin           | Hamza Admin 2-1    | hamzaadmin21@meditrack.com     | adminpass123  |
+| Admin           | Hamza Admin 2-2    | hamzaadmin22@meditrack.com     | adminpass123  |
+| Patient (Org)   | Hamza Patient 1-1  | hamzapatient11@meditrack.com   | userpass123   |
+| Patient (Org)   | Hamza Patient 1-2  | hamzapatient12@meditrack.com   | userpass123   |
+| Patient (Org)   | Hamza Patient 2-1  | hamzapatient21@meditrack.com   | userpass123   |
+| Patient (Org)   | Hamza Patient 2-2  | hamzapatient22@meditrack.com   | userpass123   |
+| Patient (Solo)  | Solo Patient       | solopatient@meditrack.com      | userpass123   |
 
 ## Features
 
