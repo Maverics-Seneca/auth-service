@@ -2,111 +2,185 @@
 
 ## Overview
 
-The Auth Service is a crucial component of our microservices architecture, responsible for user authentication and authorization. It leverages Node.js, Firebase Auth, and JWT to provide secure and scalable authentication services.
+The Auth Service is a microservice responsible for user authentication and authorization within the MediTrack application. It handles user registration, login, organization management, and audit logging, using Firebase Authentication for secure user management and JSON Web Tokens (JWT) for session handling. This service integrates with other microservices (e.g., caretaker-service, reminder-service) to provide role-based access control (RBAC) for owners, admins, and patients.
 
-## Login details
-
-| Role            | Name               | Email                          | Password      |
-|------------------|--------------------|--------------------------------|---------------|
-| Owner           | Hamza Owner        | hamzaowner@meditrack.com       | ownerpass123  |
-| Admin           | Hamza Admin 1-1    | hamzaadmin11@meditrack.com     | adminpass123  |
-| Admin           | Hamza Admin 1-2    | hamzaadmin12@meditrack.com     | adminpass123  |
-| Admin           | Hamza Admin 2-1    | hamzaadmin21@meditrack.com     | adminpass123  |
-| Admin           | Hamza Admin 2-2    | hamzaadmin22@meditrack.com     | adminpass123  |
-| Patient (Org)   | Hamza Patient 1-1  | hamzapatient11@meditrack.com   | userpass123   |
-| Patient (Org)   | Hamza Patient 1-2  | hamzapatient12@meditrack.com   | userpass123   |
-| Patient (Org)   | Hamza Patient 2-1  | hamzapatient21@meditrack.com   | userpass123   |
-| Patient (Org)   | Hamza Patient 2-2  | hamzapatient22@meditrack.com   | userpass123   |
-| Patient (Solo)  | Solo Patient       | solopatient@meditrack.com      | userpass123   |
+**This project is in development and not intended for production use.**
 
 ## Features
 
-- User signup and login
-- Two-factor authentication (2FA)
-- Role-based access control (RBAC)
-- JWT token generation and validation
+-   **User Authentication:** Register and log in users with email and password.
+-   **Role-Based Access Control (RBAC):** Supports roles (owner, admin, user) with different permissions.
+-   **Organization Management:** Create and manage organizations, linking users to specific organizations.
+-   **Audit Logging:** Logs user actions (e.g., login, registration, organization creation) in Firestore for tracking.
+-   **JWT Token Management:** Generates and validates JWTs for secure session handling.
 
 ## Tech Stack
 
-- Node.js
-- Express.js
-- Firebase Auth
-- JSON Web Tokens (JWT)
+-   Node.js: Runtime environment.
+-   Express.js: Web framework for API routing.
+-   Firebase Admin SDK: For authentication and Firestore database operations.
+-   JSON Web Tokens (JWT): For secure user sessions.
+-   Docker: For containerized deployment.
+-   Jest: For unit testing (in development).
 
 ## Project Structure
 
-```
 auth-service/
-│── src/
-│ ├── controllers/
-│ │ ├── authController.js
-│ ├── routes/
-│ │ ├── authRoutes.js
-│ ├── middlewares/
-│ │ ├── authMiddleware.js
+├── .github/
+│ ├── workflows/
+│ └── ci.yml # GitHub Actions workflow for CI
+├── src/
 │ ├── config/
-│ │ ├── firebase.js
-│ ├── app.js
-│── .github/workflows/
-│ ├── ci-cd.yml
-│── Dockerfile
-│── package.json
-│── README.md
-```
+│ │ └── firebaseConfig.js # Firebase Admin SDK initialization
+│ ├── middleware/
+│ │ └── authenticate.js # JWT verification middleware
+│ ├── routes/
+│ │ └── index.js # API route definitions
+│ └── index.js # Main application entry point
+├── .dockerignore # Docker ignore rules
+├── .gitignore # Git ignore rules
+├── Dockerfile # Docker configuration
+├── package.json # Dependencies and scripts
+├── package-lock.json # Dependency lock file
+├── README.md # Project documentation
+
+
+## Prerequisites
+
+-   Node.js (v16 or higher)
+-   npm (v8 or higher)
+-   Firebase Project: A Firebase project with Authentication and Firestore enabled.
+-   Docker (optional, for containerized setup)
 
 ## Setup and Installation
 
-1. Clone the repository:
+1.  **Clone the Repository:**
 
-   ```sh
-   git clone https://github.com/maverics-seneca/auth-service.git
-   ```
+    ```
+    git clone https://github.com/Maverics-Seneca/auth-service.git
+    cd auth-service
+    git checkout master
+    ```
 
-2. Install dependencies:
+2.  **Install Dependencies:**
 
-   ```sh
-   cd auth-service
-   npm install
-   ```
+    ```
+    npm install
+    ```
 
-3. Set up environment variables:
-   Create a `.env` file in the root directory and add the following:
+3.  **Set Up Environment Variables:**
 
-   ```sh
-   FIREBASE_API_KEY=your_firebase_api_key
-   JWT_SECRET=your_jwt_secret
-   ```
+    Create a `.env` file in the root directory with the following:
 
-4. Start the service:
+    ```
+    PORT=3000
+    FIREBASE_CREDENTIALS=<base64-encoded-firebase-service-account-key>
+    JWT_SECRET=<your-jwt-secret>
+    ```
 
-   ```sh
-   npm start
-   ```
+    -   `FIREBASE_CREDENTIALS`: Base64-encoded JSON key from your Firebase service account. Generate it via Firebase Console > Project Settings > Service Accounts.
+    -   `JWT_SECRET`: A secure string for signing JWTs (e.g., a 32-character random string).
+
+    Example for encoding Firebase credentials:
+
+    ```
+    cat serviceAccountKey.json | base64
+    ```
+
+4.  **Start the Service:**
+
+    ```
+    npm start
+    ```
+
+    The service will run on `http://localhost:4000`.
+
+
+## Docker Setup
+
+To run the service in a Docker container:
+
+1.  **Build the Image:**
+
+    ```
+    docker build -t auth-service .
+    ```
+
+2.  **Run the Container:**
+
+    ```
+    docker run --env-file .env -p 3000:3000 auth-service
+    ```
+
+    Ensure your `.env` file is present in the directory.
 
 ## API Endpoints
 
-- `POST /auth/signup` - Create a new user account
-- `POST /auth/login` - Authenticate a user and receive a JWT
-- `POST /auth/logout` - Invalidate the current JWT
-- `GET /auth/user` - Get the current user's information (protected route)
+| Method | Endpoint                    | Description                                   | Protected |
+| :----- | :-------------------------- | :-------------------------------------------- | :-------- |
+| POST   | `/api/register`             | Register a new user                           | No        |
+| POST   | `/api/login`                | Authenticate a user and return a JWT          | No        |
+| POST   | `/api/organization/create`  | Create a new organization                     | Yes       |
+| GET    | `/api/organization/:id`     | Get organization details by ID                | Yes       |
+| POST   | `/api/organization/user`    | Add a user to an organization                 | Yes       |
+| GET    | `/api/organization/user/:id`| Get user details within an organization       | Yes       |
+| GET    | `/api/logs`                 | Fetch audit logs for an organization          | Yes       |
 
-## Docker
+-   **Protected Routes:** Require a valid JWT in the `Authorization` header (`Bearer <token>`).
+-   **Audit Logs:** Actions like registration, login, and organization changes are logged to Firestore's `logs` collection.
 
-To build and run the service using Docker:
+## Development Notes
 
-```sh
-docker build -t auth-service .
-docker run -p 3000:3000 auth-service
-```
+-   **Roles:**
+    -   **Owner:** Manages multiple organizations, creates admins and users.
+    -   **Admin:** Manages users within a specific organization.
+    -   **User:** Patients with access to their own data (medications, reminders).
+-   **Firestore Collections:**
+    -   `users`: Stores user data (email, name, role, organizationId).
+    -   `organizations`: Stores organization data (name, userId).
+    -   `logs`: Stores audit logs (timestamp, action, userId, organizationId, etc.).
+-   **Testing Accounts:** Use the provided test accounts for local testing (see below).
+-   **Logging:** The service logs actions to Firestore, accessible via the `/api/logs` endpoint for admins and owners.
 
-## CI/CD
+## Test Accounts
 
-This project uses GitHub Actions for continuous integration and deployment. The workflow is defined in `.github/workflows/ci-cd.yml`.
+For development and testing purposes:
+
+| Role          | Name              | Email                         | Password      |
+| :------------ | :---------------- | :---------------------------- | :------------ |
+| Owner         | Hamza Owner       | hamzaowner@meditrack.com      | ownerpass123  |
+| Admin         | Hamza Admin 1-1   | hamzaadmin11@meditrack.com    | adminpass123  |
+| Admin         | Hamza Admin 1-2   | hamzaadmin12@meditrack.com    | adminpass123  |
+| Admin         | Hamza Admin 2-1   | hamzaadmin21@meditrack.com    | adminpass123  |
+| Admin         | Hamza Admin 2-2   | hamzaadmin22@meditrack.com    | adminpass123  |
+| Patient (Org) | Hamza Patient 1-1 | hamzapatient11@meditrack.com  | userpass123   |
+| Patient (Org) | Hamza Patient 1-2 | hamzapatient12@meditrack.com  | userpass123   |
+| Patient (Org) | Hamza Patient 2-1 | hamzapatient21@meditrack.com  | userpass123   |
+| Patient (Org) | Hamza Patient 2-2 | hamzapatient22@meditrack.com  | userpass123   |
+| Patient (Solo) | Solo Patient     | solopatient@meditrack.com     | userpass123   |
+
+**Note:** These accounts are for testing only. Do not use in production.
+
+## Continuous Integration
+
+-   **GitHub Actions:** The `.github/workflows/ci.yml` workflow runs linting and tests on every push/pull request to the `master` branch.
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+1.  Fork the repository.
+2.  Create a feature branch (`git checkout -b feature/your-feature`).
+3.  Commit changes (`git commit -m "Add your feature"`).
+4.  Push to the branch (`git push origin feature/your-feature`).
+5.  Open a pull request against the `master` branch.
+
+Please ensure code passes linting (`npm run lint`) and tests (`npm test`).
+
+## Known Issues
+
+-   Limited test coverage; more unit tests needed for edge cases.
+-   Error handling for invalid Firebase credentials could be improved.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License - see the  file for details.
+
