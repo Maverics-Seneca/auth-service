@@ -47,37 +47,21 @@ async function populateDummyData() {
         operationCount++;
     }
 
-    // 1. Create 5 Specific Owners
-    const owners = [
-        { name: 'Hamza Owner', email: 'hamzaowner@meditrack.com', phone: '123-456-7890' },
-        { name: 'Ankita Owner', email: 'ankitaowner@meditrack.com', phone: '234-567-8901' },
-        { name: 'Ranju Owner', email: 'ranjuowner@meditrack.com', phone: '345-678-9012' },
-        { name: 'Aisha Owner', email: 'aishaowner@meditrack.com', phone: '456-789-0123' },
-        { name: 'Arpit Owner', email: 'arpitowner@meditrack.com', phone: '567-890-1234' },
-    ];
-    const ownerRefs = [];
-    for (const owner of owners) {
-        const ownerRef = db.collection('users').doc();
-        addToBatch(ownerRef, {
-            name: owner.name,
-            email: owner.email,
-            password: await require('bcryptjs').hash('ownerpass123', 10),
-            role: 'owner',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        ownerRefs.push(ownerRef);
-    }
+    // 1. Create 1 Owner
+    const ownerRef = db.collection('users').doc();
+    addToBatch(ownerRef, {
+        name: 'Owner',
+        email: 'owner@meditrack.com',
+        password: await require('bcryptjs').hash('ownerpass123', 10),
+        role: 'owner',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
-    // 2. Create 7 Organizations with Owners
+    // 2. Create 2 Organizations with the Owner
     const organizations = [
-        { name: 'HealthCare Inc.', description: 'Primary healthcare provider', userId: ownerRefs[0].id }, // Hamza
-        { name: 'MediWell Corp', description: 'Wellness services', userId: ownerRefs[1].id }, // Ankita
-        { name: 'City Clinic', description: 'Urban medical center', userId: ownerRefs[2].id }, // Ranju
-        { name: 'Rural Health', description: 'Rural healthcare', userId: ownerRefs[0].id }, // Hamza (owns 2)
-        { name: 'Family Care', description: 'Family-oriented care', userId: ownerRefs[3].id }, // Aisha
-        { name: 'Senior Living', description: 'Senior care services', userId: ownerRefs[4].id }, // Arpit
-        { name: 'MultiCare', description: 'Multi-specialty care', userId: ownerRefs[1].id }, // Ankita (owns 2)
+        { name: 'HealthCare Inc.', description: 'Primary healthcare provider', userId: ownerRef.id },
+        { name: 'MediWell Corp', description: 'Wellness services', userId: ownerRef.id },
     ];
     const orgRefs = [];
     for (const org of organizations) {
@@ -90,18 +74,30 @@ async function populateDummyData() {
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         orgRefs.push(orgRef);
+
+        // Log organization creation
+        const logRef = db.collection('logs').doc();
+        addToBatch(logRef, {
+            action: 'CREATE',
+            userId: org.userId,
+            userName: 'Owner',
+            entity: 'Organization',
+            entityId: orgRef.id,
+            entityName: org.name,
+            details: { description: org.description },
+            organizationId: orgRef.id,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
     }
 
-    // 3. Create 2 Admins per Organization (14 total)
+    // 3. Create 4 Admins (2 per Organization)
     const adminRefs = [];
     for (const orgRef of orgRefs) {
-        const ownerIndex = ownerRefs.findIndex(ref => ref.id === organizations[orgRefs.indexOf(orgRef)].userId);
-        const ownerName = owners[ownerIndex].name.split(' ')[0].toLowerCase();
         for (let i = 0; i < 2; i++) {
             const adminRef = db.collection('users').doc();
             addToBatch(adminRef, {
-                name: `${ownerName} Admin ${i + 1}`,
-                email: `${ownerName}admin${i + 1}org${orgRefs.indexOf(orgRef) + 1}@meditrack.com`, // Unique per org
+                name: `Admin ${orgRefs.indexOf(orgRef) + 1}-${i + 1}`,
+                email: `admin${orgRefs.indexOf(orgRef) + 1}${i + 1}@meditrack.com`,
                 password: await require('bcryptjs').hash('adminpass123', 10),
                 role: 'admin',
                 organizationId: orgRef.id,
@@ -112,16 +108,14 @@ async function populateDummyData() {
         }
     }
 
-    // 4. Create 3 Patients per Organization (21 total)
+    // 4. Create 2 Patients per Organization (4 total)
     const patientRefs = [];
     for (const orgRef of orgRefs) {
-        const ownerIndex = ownerRefs.findIndex(ref => ref.id === organizations[orgRefs.indexOf(orgRef)].userId);
-        const ownerName = owners[ownerIndex].name.split(' ')[0].toLowerCase();
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 2; i++) {
             const patientRef = db.collection('users').doc();
             addToBatch(patientRef, {
-                name: `${ownerName} Patient ${i + 1}`,
-                email: `${ownerName}patient${i + 1}org${orgRefs.indexOf(orgRef) + 1}@meditrack.com`, // Unique per org
+                name: `Patient ${orgRefs.indexOf(orgRef) + 1}-${i + 1}`,
+                email: `patient${orgRefs.indexOf(orgRef) + 1}${i + 1}@meditrack.com`,
                 password: await require('bcryptjs').hash('userpass123', 10),
                 role: 'user',
                 organizationId: orgRef.id,
@@ -132,22 +126,16 @@ async function populateDummyData() {
         }
     }
 
-    // 5. Create 4 Medications per Patient (84 total)
+    // 5. Create 2 Medications per Patient (8 total for org patients)
     const medicationTemplates = [
         { name: 'Aspirin', dosage: '100mg', frequency: 'Twice daily', prescribingDoctor: 'Dr. Smith' },
         { name: 'Ibuprofen', dosage: '200mg', frequency: 'Once daily', prescribingDoctor: 'Dr. Jones' },
-        { name: 'Paracetamol', dosage: '500mg', frequency: 'As needed', prescribingDoctor: 'Dr. Lee' },
-        { name: 'Amoxicillin', dosage: '250mg', frequency: 'Thrice daily', prescribingDoctor: 'Dr. Brown' },
     ];
-    const currentDate = new Date('2025-03-27');
     for (const patientRef of patientRefs) {
-        const orgIndex = Math.floor(patientRefs.indexOf(patientRef) / 3);
-        for (let i = 0; i < 4; i++) {
+        const orgIndex = Math.floor(patientRefs.indexOf(patientRef) / 2);
+        for (let i = 0; i < 2; i++) {
             const medRef = db.collection('medications').doc();
-            const isExpired = i < 2; // First 2 are expired, last 2 are future
-            const endDate = isExpired
-                ? randomDate(new Date('2024-01-01'), new Date('2025-03-26'))
-                : randomDate(new Date('2025-03-28'), new Date('2025-12-31'));
+            const endDate = randomDate(new Date('2025-03-28'), new Date('2025-12-31')); // Future dates
             addToBatch(medRef, {
                 patientId: patientRef.id,
                 name: medicationTemplates[i].name,
@@ -160,53 +148,128 @@ async function populateDummyData() {
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
+
+            // Log medication creation
+            const logRef = db.collection('logs').doc();
+            addToBatch(logRef, {
+                action: 'CREATE',
+                userId: ownerRef.id,
+                userName: 'Owner',
+                entity: 'Medication',
+                entityId: medRef.id,
+                entityName: medicationTemplates[i].name,
+                details: { patientId: patientRef.id },
+                organizationId: orgRefs[orgIndex].id,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            });
         }
     }
 
-    // 6. Create 2 Reminders per Patient (42 total)
+    // 6. Create 1 Reminder per Patient (4 total for org patients)
     for (const patientRef of patientRefs) {
-        const orgIndex = Math.floor(patientRefs.indexOf(patientRef) / 3);
-        const patientDoc = await patientRef.get(); // Fetch patient data for name
-        const patientName = patientDoc.exists ? patientDoc.data().name : 'Unknown';
-
-        // Past reminder
-        const pastReminderRef = db.collection('reminders').doc();
-        addToBatch(pastReminderRef, {
+        const orgIndex = Math.floor(patientRefs.indexOf(patientRef) / 2);
+        const reminderRef = db.collection('reminders').doc();
+        addToBatch(reminderRef, {
             userId: patientRef.id,
             title: `Take ${medicationTemplates[0].name}`,
             description: 'Morning dose',
-            datetime: randomDate(new Date('2025-03-01'), new Date('2025-03-26')) + 'T08:00:00Z',
-            completed: Math.random() > 0.5, // Randomly completed or not
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        // Future reminder
-        const futureReminderRef = db.collection('reminders').doc();
-        addToBatch(futureReminderRef, {
-            userId: patientRef.id,
-            title: `Take ${medicationTemplates[1].name}`,
-            description: 'Evening dose',
-            datetime: randomDate(new Date('2025-03-28'), new Date('2025-06-30')) + 'T18:00:00Z',
+            datetime: randomDate(new Date('2025-03-28'), new Date('2025-06-30')) + 'T08:00:00Z',
             completed: false,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-    }
 
-    // 7. Create Logs for organization creation
-    for (let i = 0; i < organizations.length; i++) {
+        // Log reminder creation
         const logRef = db.collection('logs').doc();
         addToBatch(logRef, {
             action: 'CREATE',
-            userId: organizations[i].userId,
-            userName: owners.find(o => o.email === owners[ownerRefs.findIndex(ref => ref.id === organizations[i].userId)].email).name,
-            entity: 'Organization',
-            entityId: orgRefs[i].id,
-            entityName: organizations[i].name,
-            details: { description: organizations[i].description },
-            organizationId: orgRefs[i].id,
+            userId: ownerRef.id,
+            userName: 'Owner',
+            entity: 'Reminder',
+            entityId: reminderRef.id,
+            entityName: `Take ${medicationTemplates[0].name}`,
+            details: { patientId: patientRef.id },
+            organizationId: orgRefs[orgIndex].id,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
     }
+
+    // 7. Create 1 Patient with No Organization
+    const soloPatientRef = db.collection('users').doc();
+    addToBatch(soloPatientRef, {
+        name: 'Solo Patient',
+        email: 'solopatient@meditrack.com',
+        password: await require('bcryptjs').hash('userpass123', 10),
+        role: 'user',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Log solo patient creation
+    const soloPatientLogRef = db.collection('logs').doc();
+    addToBatch(soloPatientLogRef, {
+        action: 'CREATE',
+        userId: soloPatientRef.id,
+        userName: 'Solo Patient',
+        entity: 'User',
+        entityId: soloPatientRef.id,
+        entityName: 'Solo Patient',
+        details: { role: 'user' },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // 8. Create 2 Medications for Solo Patient
+    for (let i = 0; i < 2; i++) {
+        const medRef = db.collection('medications').doc();
+        const endDate = randomDate(new Date('2025-03-28'), new Date('2025-12-31'));
+        addToBatch(medRef, {
+            patientId: soloPatientRef.id,
+            name: medicationTemplates[i].name,
+            dosage: medicationTemplates[i].dosage,
+            frequency: medicationTemplates[i].frequency,
+            prescribingDoctor: medicationTemplates[i].prescribingDoctor,
+            endDate: endDate,
+            inventory: Math.floor(Math.random() * 50),
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Log medication creation for solo patient
+        const logRef = db.collection('logs').doc();
+        addToBatch(logRef, {
+            action: 'CREATE',
+            userId: soloPatientRef.id,
+            userName: 'Solo Patient',
+            entity: 'Medication',
+            entityId: medRef.id,
+            entityName: medicationTemplates[i].name,
+            details: { patientId: soloPatientRef.id },
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
+    }
+
+    // 9. Create 1 Reminder for Solo Patient
+    const soloReminderRef = db.collection('reminders').doc();
+    addToBatch(soloReminderRef, {
+        userId: soloPatientRef.id,
+        title: `Take ${medicationTemplates[0].name}`,
+        description: 'Morning dose',
+        datetime: randomDate(new Date('2025-03-28'), new Date('2025-06-30')) + 'T08:00:00Z',
+        completed: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Log reminder creation for solo patient
+    const soloReminderLogRef = db.collection('logs').doc();
+    addToBatch(soloReminderLogRef, {
+        action: 'CREATE',
+        userId: soloPatientRef.id,
+        userName: 'Solo Patient',
+        entity: 'Reminder',
+        entityId: soloReminderRef.id,
+        entityName: `Take ${medicationTemplates[0].name}`,
+        details: { patientId: soloPatientRef.id },
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
     // Commit all batches
     for (let i = 0; i < batches.length; i++) {
