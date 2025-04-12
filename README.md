@@ -27,7 +27,7 @@ The Auth Service is a microservice responsible for user authentication and autho
 
 auth-service/
 ├── .github/
-│ ├── workflows/
+│ └── workflows/
 │ └── ci.yml # GitHub Actions workflow for CI
 ├── src/
 │ ├── config/
@@ -43,7 +43,6 @@ auth-service/
 ├── package.json # Dependencies and scripts
 ├── package-lock.json # Dependency lock file
 ├── README.md # Project documentation
-
 
 ## Prerequisites
 
