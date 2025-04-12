@@ -50,8 +50,8 @@ async function populateDummyData() {
     // 1. Create 1 Owner
     const ownerRef = db.collection('users').doc();
     addToBatch(ownerRef, {
-        name: 'Hamza Owner',
-        email: 'hamzaowner@meditrack.com',
+        name: 'Owner',
+        email: 'owner@meditrack.com',
         password: await require('bcryptjs').hash('ownerpass123', 10),
         role: 'owner',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -80,7 +80,7 @@ async function populateDummyData() {
         addToBatch(logRef, {
             action: 'CREATE',
             userId: org.userId,
-            userName: 'Hamza Owner',
+            userName: 'Owner',
             entity: 'Organization',
             entityId: orgRef.id,
             entityName: org.name,
@@ -96,8 +96,8 @@ async function populateDummyData() {
         for (let i = 0; i < 2; i++) {
             const adminRef = db.collection('users').doc();
             addToBatch(adminRef, {
-                name: `Hamza Admin ${orgRefs.indexOf(orgRef) + 1}-${i + 1}`,
-                email: `hamzaadmin${orgRefs.indexOf(orgRef) + 1}${i + 1}@meditrack.com`,
+                name: `Admin ${orgRefs.indexOf(orgRef) + 1}-${i + 1}`,
+                email: `admin${orgRefs.indexOf(orgRef) + 1}${i + 1}@meditrack.com`,
                 password: await require('bcryptjs').hash('adminpass123', 10),
                 role: 'admin',
                 organizationId: orgRef.id,
@@ -114,8 +114,8 @@ async function populateDummyData() {
         for (let i = 0; i < 2; i++) {
             const patientRef = db.collection('users').doc();
             addToBatch(patientRef, {
-                name: `Hamza Patient ${orgRefs.indexOf(orgRef) + 1}-${i + 1}`,
-                email: `hamzapatient${orgRefs.indexOf(orgRef) + 1}${i + 1}@meditrack.com`,
+                name: `Patient ${orgRefs.indexOf(orgRef) + 1}-${i + 1}`,
+                email: `patient${orgRefs.indexOf(orgRef) + 1}${i + 1}@meditrack.com`,
                 password: await require('bcryptjs').hash('userpass123', 10),
                 role: 'user',
                 organizationId: orgRef.id,
@@ -154,7 +154,7 @@ async function populateDummyData() {
             addToBatch(logRef, {
                 action: 'CREATE',
                 userId: ownerRef.id,
-                userName: 'Hamza Owner',
+                userName: 'Owner',
                 entity: 'Medication',
                 entityId: medRef.id,
                 entityName: medicationTemplates[i].name,
@@ -183,7 +183,7 @@ async function populateDummyData() {
         addToBatch(logRef, {
             action: 'CREATE',
             userId: ownerRef.id,
-            userName: 'Hamza Owner',
+            userName: 'Owner',
             entity: 'Reminder',
             entityId: reminderRef.id,
             entityName: `Take ${medicationTemplates[0].name}`,

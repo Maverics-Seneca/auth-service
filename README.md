@@ -146,18 +146,18 @@ To run the service in a Docker container:
 
 For development and testing purposes:
 
-| Role          | Name              | Email                         | Password      |
-| :------------ | :---------------- | :---------------------------- | :------------ |
-| Owner         | Hamza Owner       | hamzaowner@meditrack.com      | ownerpass123  |
-| Admin         | Hamza Admin 1-1   | hamzaadmin11@meditrack.com    | adminpass123  |
-| Admin         | Hamza Admin 1-2   | hamzaadmin12@meditrack.com    | adminpass123  |
-| Admin         | Hamza Admin 2-1   | hamzaadmin21@meditrack.com    | adminpass123  |
-| Admin         | Hamza Admin 2-2   | hamzaadmin22@meditrack.com    | adminpass123  |
-| Patient (Org) | Hamza Patient 1-1 | hamzapatient11@meditrack.com  | userpass123   |
-| Patient (Org) | Hamza Patient 1-2 | hamzapatient12@meditrack.com  | userpass123   |
-| Patient (Org) | Hamza Patient 2-1 | hamzapatient21@meditrack.com  | userpass123   |
-| Patient (Org) | Hamza Patient 2-2 | hamzapatient22@meditrack.com  | userpass123   |
-| Patient (Solo) | Solo Patient     | solopatient@meditrack.com     | userpass123   |
+| Role           | Name          | Email                     | Password      |
+| :------------- | :------------ | :------------------------ | :------------ |
+| Owner          |  Owner        | owner@meditrack.com       | ownerpass123  |
+| Admin          |  Admin 1-1    | admin11@meditrack.com     | adminpass123  |
+| Admin          |  Admin 1-2    | admin12@meditrack.com     | adminpass123  |
+| Admin          |  Admin 2-1    | admin21@meditrack.com     | adminpass123  |
+| Admin          |  Admin 2-2    | admin22@meditrack.com     | adminpass123  |
+| Patient (Org)  |  Patient 1-1  | patient11@meditrack.com   | userpass123   |
+| Patient (Org)  |  Patient 1-2  | patient12@meditrack.com   | userpass123   |
+| Patient (Org)  |  Patient 2-1  | patient21@meditrack.com   | userpass123   |
+| Patient (Org)  |  Patient 2-2  | patient22@meditrack.com   | userpass123   |
+| Patient (Solo) | Solo Patient  | solopatient@meditrack.com | userpass123   |
 
 **Note:** These accounts are for testing only. Do not use in production.
 
