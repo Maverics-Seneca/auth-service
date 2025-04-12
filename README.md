@@ -25,24 +25,20 @@ The Auth Service is a microservice responsible for user authentication and autho
 
 ## Project Structure
 
-auth-service/
-├── .github/
-│ └── workflows/
-│ └── ci.yml # GitHub Actions workflow for CI
-├── src/
-│ ├── config/
-│ │ └── firebaseConfig.js # Firebase Admin SDK initialization
-│ ├── middleware/
-│ │ └── authenticate.js # JWT verification middleware
-│ ├── routes/
-│ │ └── index.js # API route definitions
-│ └── index.js # Main application entry point
-├── .dockerignore # Docker ignore rules
-├── .gitignore # Git ignore rules
-├── Dockerfile # Docker configuration
-├── package.json # Dependencies and scripts
-├── package-lock.json # Dependency lock file
-├── README.md # Project documentation
+| Directory/File       | Description                         |
+|----------------------|-------------------------------------|
+| `.github/`           | GitHub workflows                    |
+| `src/`               | Source code                         |
+| `src/config/`        | Firebase Admin SDK configuration    |
+| `src/middleware/`    | JWT verification middleware         |
+| `src/routes/`        | API route definitions               |
+| `src/index.js`       | Main application entry point        |
+| `.dockerignore`      | Docker ignore rules                 |
+| `.gitignore`         | Git ignore rules                    |
+| `Dockerfile`         | Docker configuration                |
+| `package.json`       | Dependencies and scripts            |
+| `package-lock.json`  | Dependency lock file                |
+| `README.md`          | Project documentation               |
 
 ## Prerequisites
 
